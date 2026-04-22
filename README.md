@@ -25,7 +25,7 @@ I wanted to do more outside of the assignment as I thought it was beyond the sco
 - Basic CSS knowlege.
 
 ## Checklist
-- [ ] Import project files
+- [x] Import project files
 - [ ] Create pages
 - [ ] Add Flask routes
 - [ ] Create Dockerfile
