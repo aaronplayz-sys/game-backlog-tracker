@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Games</h2>
+    <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addGameModal">
+        + Add Game
+    </button>
+</div>
+
+<div class="card p-3">
+    <table class="table table-dark table-hover align-middle">
+        <thead>
+            <tr><th>ID</th><th>Title</th><th>Genre</th><th>Platform</th><th>Year</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+            {% for g in games %}
+            <tr>
+                <td style="color: #adb5bd;">{{ g['game_id'] }}</td>
+                <td class="fw-semibold">{{ g['title'] }}</td>
+                <td>{{ g['genre'] }}</td>
+                <td><span class="badge bg-secondary">{{ g['platform_name'] }}</span></td>
+                <td>{{ g['release_year'] }}</td>
+                <td>
+                    <button class="btn btn-sm btn-outline-light btn-action"
+                        data-bs-toggle="modal"
+                        data-bs-target="#editGame{{ g['game_id'] }}">Edit</button>
+                    <form action="/games/delete/{{ g['game_id'] }}" method="post" class="d-inline">
+                        <button class="btn btn-sm btn-outline-danger btn-action"
+                            onclick="return confirm('Delete game and its backlog entry?')">Del</button>
+                    </form>
+                </td>
+            </tr>
+
+            <!-- Edit Modal -->
+            <div class="modal fade" id="editGame{{ g['game_id'] }}" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content bg-dark text-light">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Edit — {{ g['title'] }}</h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                        </div>
+                        <form action="/games/update/{{ g['game_id'] }}" method="post">
+                            <div class="modal-body">
+                                <div class="mb-3">
+                                    <label class="form-label">Title</label>
+                                    <input type="text" name="title" class="form-control bg-dark text-light"
+                                        value="{{ g['title'] }}" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Genre</label>
+                                    <input type="text" name="genre" class="form-control bg-dark text-light"
+                                        value="{{ g['genre'] }}" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Platform</label>
+                                    <select name="platform_id" class="form-select bg-dark text-light">
+                                        {% for p in platforms %}
+                                        <option value="{{ p.platform_id }}"
+                                            {{ 'selected' if p.platform_id == g['platform_id'] }}>
+                                            {{ p.name }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Release Year</label>
+                                    <input type="number" name="release_year" class="form-control bg-dark text-light"
+                                        value="{{ g['release_year'] }}" required>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="submit" class="btn btn-primary">Save Changes</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Add Game Modal -->
+<div class="modal fade" id="addGameModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark text-light">
+            <div class="modal-header">
+                <h5 class="modal-title">Add Game</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="/games/add" method="post">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Title</label>
+                        <input type="text" name="title" class="form-control bg-dark text-light" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Genre</label>
+                        <input type="text" name="genre" class="form-control bg-dark text-light" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Platform</label>
+                        <select name="platform_id" class="form-select bg-dark text-light" required>
+                            {% for p in platforms %}
+                            <option value="{{ p.platform_id }}">{{ p.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Release Year</label>
+                        <input type="number" name="release_year" class="form-control bg-dark text-light" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-success">Add Game</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

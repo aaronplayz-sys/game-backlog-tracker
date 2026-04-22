@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>My Backlog</h2>
+    <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addEntryModal">
+        + Add to Backlog
+    </button>
+</div>
+
+<!-- Stats Row -->
+<div class="row mb-4">
+{% for status, count in stats.items() %}
+    <div class="col-6 col-md-3 mb-2">
+        <div class="card text-center p-3">
+            <div class="fs-2 fw-bold text-white">{{ count }}</div>
+            <div class="small mt-1" style="color: #adb5bd;">{{ status }}</div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Backlog Table -->
+<div class="card p-3">
+    <table class="table table-dark table-hover align-middle">
+        <thead>
+            <tr>
+                <th>Title</th>
+                <th>Platform</th>
+                <th>Status</th>
+                <th>Rating</th>
+                <th>Hours</th>
+                <th>Notes</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for e in entries %}
+            <tr>
+                <td class="fw-semibold">{{ e['title'] }}</td>
+                <td><span class="badge bg-secondary">{{ e['platform_name'] }}</span></td>
+                <td>
+                    <span class="badge badge-{{ e['status'] | lower }}">{{ e['status'] }}</span>
+                </td>
+                <td>{{ e['personal_rating'] ~ '/10' if e['personal_rating'] else '—' }}</td>
+                <td>{{ e['hours_played'] }}h</td>
+                <td class="small" style="color: #adb5bd;">{{ e['notes'] or '—' }}</td>
+                <td>
+                    <button class="btn btn-sm btn-outline-light btn-action"
+                        data-bs-toggle="modal"
+                        data-bs-target="#editModal{{ e['entry_id'] }}">Edit</button>
+                    <form action="/backlog/delete/{{ e['entry_id'] }}" method="post" class="d-inline">
+                        <button class="btn btn-sm btn-outline-danger btn-action"
+                            onclick="return confirm('Remove from backlog?')">Del</button>
+                    </form>
+                </td>
+            </tr>
+
+            <!-- Edit Modal for each entry -->
+            <div class="modal fade" id="editModal{{ e['entry_id'] }}" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content bg-dark text-light">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Update — {{ e['title'] }}</h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                        </div>
+                        <form action="/backlog/update/{{ e['entry_id'] }}" method="post">
+                            <div class="modal-body">
+                                <div class="mb-3">
+                                    <label class="form-label">Status</label>
+                                    <select name="status" class="form-select bg-dark text-light">
+                                        {% for s in ['Backlog','Playing','Completed','Dropped'] %}
+                                        <option value="{{ s }}" {{ 'selected' if e['status'] == s }}>{{ s }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Rating (1–10)</label>
+                                    <input type="number" name="personal_rating" min="1" max="10"
+                                        class="form-control bg-dark text-light"
+                                        value="{{ e['personal_rating'] or '' }}">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Hours Played</label>
+                                    <input type="number" step="0.5" name="hours_played"
+                                        class="form-control bg-dark text-light"
+                                        value="{{ e['hours_played'] }}">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Notes</label>
+                                    <textarea name="notes" class="form-control bg-dark text-light"
+                                        rows="2">{{ e['notes'] or '' }}</textarea>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="submit" class="btn btn-primary">Save Changes</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Add Entry Modal -->
+<div class="modal fade" id="addEntryModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark text-light">
+            <div class="modal-header">
+                <h5 class="modal-title">Add Game to Backlog</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="/backlog/add" method="post">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Game</label>
+                        <select name="game_id" class="form-select bg-dark text-light" required>
+                            {% for g in games %}
+                            <option value="{{ g['game_id'] }}">{{ g['title'] }} ({{ g['platform_name'] }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Status</label>
+                        <select name="status" class="form-select bg-dark text-light">
+                            {% for s in ['Backlog','Playing','Completed','Dropped'] %}
+                            <option value="{{ s }}">{{ s }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Rating (optional)</label>
+                        <input type="number" name="personal_rating" min="1" max="10"
+                            class="form-control bg-dark text-light" placeholder="1–10">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Hours Played</label>
+                        <input type="number" step="0.5" name="hours_played"
+                            class="form-control bg-dark text-light" value="0">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Notes</label>
+                        <textarea name="notes" class="form-control bg-dark text-light" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-success">Add to Backlog</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

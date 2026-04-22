@@ -1,7 +1,7 @@
 import sqlite3
 import os
 
-DB_NAME = "backlog.db"
+DB_NAME = os.environ.get("DB_PATH", "backlog.db")
 
 class DatabaseManager:
     """Manages the SQLite database connection and schema setup."""
@@ -12,7 +12,7 @@ class DatabaseManager:
 
     def connect(self):
         """Open a connection to the SQLite database."""
-        self.connection = sqlite3.connect(self.db_name)
+        self.connection = sqlite3.connect(self.db_name, check_same_thread=False)
         self.connection.row_factory = sqlite3.Row  # lets us access columns by name
         self.connection.execute("PRAGMA foreign_keys = ON")  # enforce FK constraints
         print(f"Connected to database: {self.db_name}")

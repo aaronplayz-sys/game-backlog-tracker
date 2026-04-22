@@ -26,9 +26,9 @@ I wanted to do more outside of the assignment as I thought it was beyond the sco
 
 ## Checklist
 - [x] Import project files
-- [ ] Create pages
-- [ ] Add Flask routes
-- [ ] Create Dockerfile
-- [ ] Create docker-compose.yml
+- [x] Create pages
+- [x] Add Flask routes
+- [x] Create Dockerfile
+- [x] Create docker-compose.yml
 - [ ] Write installation instructions
-- [ ] What to do from here???
+- [ ] Documentation

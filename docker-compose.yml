@@ -1,0 +1,14 @@
+services:
+  backlog-tracker:
+    build: .
+    container_name: game_backlog_tracker
+    ports:
+      - "5000:5000"
+    volumes:
+      - backlog_data:/app/data
+    environment:
+      - DB_PATH=/app/data/backlog.db
+    restart: unless-stopped
+
+volumes:
+  backlog_data:
