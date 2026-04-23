@@ -24,11 +24,42 @@ I wanted to do more outside of the assignment as I thought it was beyond the sco
 - Basic HTML knowlege.
 - Basic CSS knowlege.
 
+## Installation
+Installing and running this application is very simular but can differ slighty depending if you choose to run with python installed on your system or using docker. My recommendation is that you use docker unless you plan to make further modifications.
+
+### Docker
+
+Asuming you have docker and docker compose installed.
+
+Clone this repo: `git clone https://github.com/aaronplayz-sys/game-backlog-tracker.git`
+
+Enter the directory and then run `docker compose up -d`.
+
+This will take a moment as the image will be built locally as I do not host pre-built images.
+
+This application will be running on port **5000**.
+
+Optional: 
+
+Import sample data, by doing `docker compose exec backlog-tracker python load_sample_data.py`
+
+#### Making modifications
+
+If wish to make modifications with docker, you need to rebuild the image each time you make a change, this is why I recommend that you have python installed on your system to see changes instantly without needed to build an image.
+
+### Native python
+
+This is the best method to run the console-based application (no webpage) and the web version. This is also the easist way to make changes and see them instantly.
+
+Clone this repo: `git clone https://github.com/aaronplayz-sys/game-backlog-tracker.git`
+
+Enter the directory and then run `python app.py` if you want the webpage interface. If you want to run the console-based app then run `python main.py`.
+
 ## Checklist
 - [x] Import project files
 - [x] Create pages
 - [x] Add Flask routes
 - [x] Create Dockerfile
 - [x] Create docker-compose.yml
-- [ ] Write installation instructions
+- [x] Write installation instructions
 - [ ] Documentation
