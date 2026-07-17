@@ -232,6 +232,49 @@ def episode_toggle(episode_id):
 
 
 # =========================================================
+# LIGHTWEIGHT JSON API (for userscript)
+# =========================================================
+
+import os
+API_SECRET = os.environ.get("USERSCRIPT_API_SECRET", "change-me-please")
+
+def check_api_secret():
+    """Simple shared-secret check so random pages can't hit this API."""
+    return request.headers.get("X-API-Secret") == API_SECRET
+
+
+@app.route("/api/tv-shows")
+def api_tv_shows():
+    if not check_api_secret():
+        return {"error": "unauthorized"}, 401
+
+    shows = media_tracker.get_all_media("tv")
+    result = []
+    for show in shows:
+        show_dict = dict(show)
+        if show_dict["status"] not in ("Watching", "Backlog"):
+            continue  # skip Completed/Dropped — nothing to advance
+
+        next_ep = media_tracker.get_next_unwatched_episode(show_dict["media_id"])
+        result.append({
+            "media_id": show_dict["media_id"],
+            "title": show_dict["title"],
+            "poster_path": show_dict["poster_path"],
+            "next_episode": next_ep
+        })
+    return {"shows": result}
+
+
+@app.route("/api/episode/toggle/<int:episode_id>", methods=["POST"])
+def api_episode_toggle(episode_id):
+    if not check_api_secret():
+        return {"error": "unauthorized"}, 401
+
+    media_tracker.toggle_episode_watched(episode_id)
+    return {"success": True}
+
+
+# =========================================================
 # RUN
 # =========================================================
 

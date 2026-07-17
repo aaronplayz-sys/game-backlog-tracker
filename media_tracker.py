@@ -178,3 +178,25 @@ class MediaTracker:
         """, (new_status, episode_id))
         self.conn.commit()
         return True
+    
+    def get_next_unwatched_episode(self, media_id):
+        """Find the next unwatched episode in order across all seasons."""
+        cursor = self.conn.cursor()
+        cursor.execute("""
+            SELECT e.episode_id, e.episode_number, e.title AS episode_title,
+                   s.season_number
+            FROM episodes e
+            JOIN seasons s ON e.season_id = s.season_id
+            WHERE s.media_id = ? AND e.watched = 0
+            ORDER BY s.season_number, e.episode_number
+            LIMIT 1
+        """, (media_id,))
+        row = cursor.fetchone()
+        if row:
+            return {
+                "episode_id": row["episode_id"],
+                "season_number": row["season_number"],
+                "episode_number": row["episode_number"],
+                "title": row["episode_title"]
+            }
+        return None  # fully watched

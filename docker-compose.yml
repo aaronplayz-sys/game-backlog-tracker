@@ -9,6 +9,7 @@ services:
     environment:
       - DB_PATH=/app/data/backlog.db
       - TMDB_API_KEY=${TMDB_API_KEY}
+      - USERSCRIPT_API_SECRET=${USERSCRIPT_API_SECRET}
     env_file:
       - .env
     restart: unless-stopped
