@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>🎬 Movies & TV Shows</h2>
+    <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#searchModal">
+        + Add Movie/Show
+    </button>
+</div>
+
+<!-- Filter buttons -->
+<div class="mb-4">
+    <a href="/media" class="btn btn-sm {{ 'btn-primary' if not active_filter else 'btn-outline-secondary' }}">All</a>
+    <a href="/media?type=movie" class="btn btn-sm {{ 'btn-primary' if active_filter == 'movie' else 'btn-outline-secondary' }}">Movies</a>
+    <a href="/media?type=tv" class="btn btn-sm {{ 'btn-primary' if active_filter == 'tv' else 'btn-outline-secondary' }}">TV Shows</a>
+</div>
+
+<!-- Poster Grid -->
+<div class="row g-4">
+    {% for item in items %}
+    <div class="col-6 col-md-3 col-lg-2">
+        <a href="/media/{{ item.media_id }}" class="text-decoration-none text-light">
+            <div class="card h-100">
+                {% if item.poster_path %}
+                <img src="https://image.tmdb.org/t/p/w342{{ item.poster_path }}"
+                     class="card-img-top" alt="{{ item.title }}">
+                {% else %}
+                <div class="d-flex align-items-center justify-content-center bg-secondary"
+                     style="height: 300px;">No Poster</div>
+                {% endif %}
+                <div class="card-body p-2">
+                    <div class="small fw-semibold text-truncate text-light">{{ item.title }}</div>
+                    <span class="badge badge-{{ item.status | lower }} mt-1">{{ item.status }}</span>
+                    {% if item.media_type == 'tv' and item.progress %}
+                    <div class="progress mt-2" style="height: 6px;">
+                        <div class="progress-bar bg-info" style="width: {{ item.progress.percent }}%;"></div>
+                    </div>
+                    <div class="small mt-1" style="color: #adb5bd;">
+                        {{ item.progress.watched }}/{{ item.progress.total }} episodes
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </a>
+    </div>
+    {% else %}
+    <p class="text-center" style="color: #adb5bd;">Nothing here yet — add a movie or show to get started.</p>
+    {% endfor %}
+</div>
+
+<!-- Add Media Modal with Live Search -->
+<div class="modal fade" id="searchModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content bg-dark text-light">
+            <div class="modal-header">
+                <h5 class="modal-title">Search TMDB</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="tmdbSearchInput" class="form-control bg-dark text-light mb-3"
+                       placeholder="Type a movie or show title...">
+                <div id="searchResults" class="row g-2"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Hidden form used to submit the selected result -->
+<form id="addMediaForm" action="/media/add" method="post" style="display:none;">
+    <input type="hidden" name="tmdb_id" id="f_tmdb_id">
+    <input type="hidden" name="media_type" id="f_media_type">
+    <input type="hidden" name="title" id="f_title">
+    <input type="hidden" name="poster_path" id="f_poster_path">
+    <input type="hidden" name="overview" id="f_overview">
+    <input type="hidden" name="release_date" id="f_release_date">
+</form>
+
+<script>
+const searchInput = document.getElementById('tmdbSearchInput');
+const resultsDiv = document.getElementById('searchResults');
+let debounceTimer;
+
+searchInput.addEventListener('input', () => {
+    clearTimeout(debounceTimer);
+    const query = searchInput.value.trim();
+    if (query.length < 2) {
+        resultsDiv.innerHTML = '';
+        return;
+    }
+    debounceTimer = setTimeout(() => {
+        fetch(`/api/tmdb-search?q=${encodeURIComponent(query)}`)
+            .then(res => res.json())
+            .then(data => renderResults(data.results));
+    }, 400); // debounce: wait 400ms after typing stops
+});
+
+function renderResults(results) {
+    if (results.length === 0) {
+        resultsDiv.innerHTML = '<p class="text-muted">No results found.</p>';
+        return;
+    }
+    resultsDiv.innerHTML = results.map(r => `
+        <div class="col-4 col-md-3">
+            <div class="card h-100" style="cursor:pointer;" onclick='selectResult(${JSON.stringify(r)})'>
+                ${r.poster_path
+                    ? `<img src="https://image.tmdb.org/t/p/w185${r.poster_path}" class="card-img-top">`
+                    : `<div class="bg-secondary d-flex align-items-center justify-content-center" style="height:180px;">No Poster</div>`
+                }
+                <div class="card-body p-2">
+                    <div class="small fw-semibold text-truncate text-light">${r.title}</div>
+                    <span class="badge bg-secondary text-light">${r.media_type}</span>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+function selectResult(item) {
+    document.getElementById('f_tmdb_id').value = item.tmdb_id;
+    document.getElementById('f_media_type').value = item.media_type;
+    document.getElementById('f_title').value = item.title;
+    document.getElementById('f_poster_path').value = item.poster_path || '';
+    document.getElementById('f_overview').value = item.overview || '';
+    document.getElementById('f_release_date').value = item.release_date || '';
+    document.getElementById('addMediaForm').submit();
+}
+</script>
+{% endblock %}

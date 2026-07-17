@@ -4,6 +4,7 @@
 from flask import Flask, render_template, request, redirect, url_for, flash
 from database import DatabaseManager
 from tracker import BacklogTracker
+from media_tracker import MediaTracker
 
 app = Flask(__name__)
 app.secret_key = "backlog_tracker_secret"
@@ -13,7 +14,7 @@ db = DatabaseManager()
 db.connect()
 db.create_tables()
 tracker = BacklogTracker(db.get_connection())
-
+media_tracker = MediaTracker(db.get_connection())
 
 # =========================================================
 # DASHBOARD
@@ -131,6 +132,103 @@ def backlog_delete(eid):
     tracker.delete_entry(eid)
     flash("Entry removed from backlog.", "success")
     return redirect(url_for("index"))
+
+
+# =========================================================
+# MEDIA ROUTES (Movies & TV Shows)
+# =========================================================
+
+@app.route("/media")
+def media():
+    media_type = request.args.get("type")  # optional filter: movie / tv
+    items = media_tracker.get_all_media(media_type)
+
+    # Attach progress info for TV shows
+    items_with_progress = []
+    for item in items:
+        item_dict = dict(item)
+        if item_dict["media_type"] == "tv":
+            item_dict["progress"] = media_tracker.get_progress(item_dict["media_id"])
+        items_with_progress.append(item_dict)
+
+    return render_template("media.html", items=items_with_progress,
+                           active_filter=media_type)
+
+
+@app.route("/api/tmdb-search")
+def tmdb_search():
+    """JSON endpoint used by the live search JS on the Media page."""
+    query = request.args.get("q", "").strip()
+    if len(query) < 2:
+        return {"results": []}
+    results = media_tracker.search_tmdb(query)
+    return {"results": results}
+
+
+@app.route("/media/add", methods=["POST"])
+def media_add():
+    result = media_tracker.add_media_item(
+        int(request.form["tmdb_id"]),
+        request.form["media_type"],
+        request.form["title"],
+        request.form.get("poster_path"),
+        request.form.get("overview", ""),
+        request.form.get("release_date")
+    )
+    flash(f"Added '{request.form['title']}'!" if result else "Already in your tracker.",
+          "success" if result else "danger")
+    return redirect(url_for("media"))
+
+
+@app.route("/media/update/<int:media_id>", methods=["POST"])
+def media_update(media_id):
+    rating = request.form.get("personal_rating")
+    media_tracker.update_media_item(
+        media_id,
+        request.form.get("status"),
+        int(rating) if rating else None,
+        request.form.get("notes")
+    )
+    flash("Updated!", "success")
+    return redirect(url_for("media"))
+
+
+@app.route("/media/delete/<int:media_id>", methods=["POST"])
+def media_delete(media_id):
+    media_tracker.delete_media_item(media_id)
+    flash("Removed from tracker.", "success")
+    return redirect(url_for("media"))
+
+
+@app.route("/media/<int:media_id>")
+def media_detail(media_id):
+    """Show detail page — seasons and episodes for a TV show."""
+    item = media_tracker.get_media_by_id(media_id)
+    if not item:
+        flash("Media item not found.", "danger")
+        return redirect(url_for("media"))
+
+    seasons_with_episodes = []
+    if item["media_type"] == "tv":
+        seasons = media_tracker.get_seasons_for_media(media_id)
+        for season in seasons:
+            episodes = media_tracker.get_episodes_for_season(season["season_id"])
+            seasons_with_episodes.append({
+                "season": season,
+                "episodes": episodes
+            })
+
+    progress = media_tracker.get_progress(media_id) if item["media_type"] == "tv" else None
+
+    return render_template("media_detail.html", item=item,
+                           seasons=seasons_with_episodes, progress=progress)
+
+
+@app.route("/episode/toggle/<int:episode_id>", methods=["POST"])
+def episode_toggle(episode_id):
+    media_tracker.toggle_episode_watched(episode_id)
+    # Redirect back to the referring show page
+    return redirect(request.referrer or url_for("media"))
 
 
 # =========================================================

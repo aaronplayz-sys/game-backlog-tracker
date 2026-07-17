@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="row mb-4">
+    <div class="col-md-3">
+        {% if item.poster_path %}
+        <img src="https://image.tmdb.org/t/p/w342{{ item.poster_path }}"
+             class="img-fluid rounded" alt="{{ item.title }}">
+        {% endif %}
+    </div>
+    <div class="col-md-9">
+        <h2>{{ item.title }}</h2>
+        <span class="badge bg-secondary mb-2">{{ item.media_type | upper }}</span>
+        <span class="badge badge-{{ item.status | lower }} mb-2">{{ item.status }}</span>
+        <p style="color: #adb5bd;">{{ item.overview }}</p>
+        <p class="small" style="color: #adb5bd;">Released: {{ item.release_date }}</p>
+
+        {% if progress %}
+        <div class="mb-2">
+            <div class="progress" style="height: 10px;">
+                <div class="progress-bar bg-info" style="width: {{ progress.percent }}%;"></div>
+            </div>
+            <div class="small mt-1" style="color: #adb5bd;">
+                {{ progress.watched }}/{{ progress.total }} episodes watched ({{ progress.percent }}%)
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Update Status/Rating/Notes -->
+        <form action="/media/update/{{ item.media_id }}" method="post" class="row g-2 mt-2">
+            <div class="col-auto">
+                <label class="form-label small mb-1" style="color: #adb5bd;">Status</label>
+                <select name="status" class="form-select form-select-sm bg-dark text-light">
+                    {% for s in ['Backlog','Watching','Completed','Dropped'] %}
+                    <option value="{{ s }}" {{ 'selected' if item.status == s }}>{{ s }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-auto">
+                <label class="form-label small mb-1" style="color: #adb5bd;">Rating (1–10)</label>
+                <input type="number" name="personal_rating" min="1" max="10"
+                       class="form-control form-control-sm bg-dark text-light" style="width:100px;"
+                       placeholder="Rating" value="{{ item.personal_rating or '' }}">
+            </div>
+            <div class="col-auto">
+                <label class="form-label small mb-1" style="color: #adb5bd;">Notes</label>
+                <input type="text" name="notes" class="form-control form-control-sm bg-dark text-light"
+                       placeholder="Notes" value="{{ item.notes or '' }}">
+            </div>
+            <div class="col-auto d-flex align-items-end">
+                <button type="submit" class="btn btn-sm btn-primary">Save</button>
+            </div>
+        </form>
+
+        <form action="/media/delete/{{ item.media_id }}" method="post" class="mt-2">
+            <button class="btn btn-sm btn-outline-danger"
+                onclick="return confirm('Remove this from your tracker?')">Delete</button>
+        </form>
+    </div>
+</div>
+
+{% if seasons %}
+<h4 class="mt-4">Seasons</h4>
+<div class="accordion" id="seasonAccordion">
+    {% for s in seasons %}
+    <div class="accordion-item bg-dark text-light border-secondary">
+        <h2 class="accordion-header">
+            <button class="accordion-button collapsed bg-dark text-light" type="button"
+                data-bs-toggle="collapse" data-bs-target="#season{{ s.season.season_id }}">
+                Season {{ s.season.season_number }} ({{ s.episodes | selectattr('watched') | list | length }}/{{ s.episodes | length }} watched)
+            </button>
+        </h2>
+        <div id="season{{ s.season.season_id }}" class="accordion-collapse collapse"
+             data-bs-parent="#seasonAccordion">
+            <div class="accordion-body">
+                {% for ep in s.episodes %}
+                <form action="/episode/toggle/{{ ep.episode_id }}" method="post"
+                      class="d-flex align-items-center mb-2">
+                    <button type="submit" class="btn btn-sm {{ 'btn-success' if ep.watched else 'btn-outline-secondary' }} me-2"
+                        style="width: 32px;">
+                        {{ '✓' if ep.watched else '' }}
+                    </button>
+                    <span class="me-2 text-muted">E{{ ep.episode_number }}</span>
+                    <span>{{ ep.title }}</span>
+                    {% if ep.air_date %}
+                    <span class="ms-auto small text-muted">{{ ep.air_date }}</span>
+                    {% endif %}
+                </form>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% endblock %}

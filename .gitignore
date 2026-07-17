@@ -208,3 +208,5 @@ __marimo__/
 
 # database files
 *.db
+
+*.pyc
