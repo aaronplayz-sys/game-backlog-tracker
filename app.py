@@ -273,6 +273,13 @@ def api_episode_toggle(episode_id):
     media_tracker.toggle_episode_watched(episode_id)
     return {"success": True}
 
+@app.route("/season/mark-watched/<int:season_id>", methods=["POST"])
+def season_mark_watched(season_id):
+    action = request.form.get("action", "watch")  # 'watch' or 'unwatch'
+    media_tracker.mark_season_watched(season_id, watched=(action == "watch"))
+    flash("Season updated!", "success")
+    return redirect(request.referrer or url_for("media"))
+
 
 # =========================================================
 # RUN

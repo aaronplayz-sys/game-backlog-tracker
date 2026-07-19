@@ -64,12 +64,20 @@
 <div class="accordion" id="seasonAccordion">
     {% for s in seasons %}
     <div class="accordion-item bg-dark text-light border-secondary">
-        <h2 class="accordion-header">
-            <button class="accordion-button collapsed bg-dark text-light" type="button"
-                data-bs-toggle="collapse" data-bs-target="#season{{ s.season.season_id }}">
-                Season {{ s.season.season_number }} ({{ s.episodes | selectattr('watched') | list | length }}/{{ s.episodes | length }} watched)
-            </button>
-        </h2>
+        <h2 class="accordion-header d-flex align-items-stretch">
+    <button class="accordion-button collapsed bg-dark text-light" type="button"
+        data-bs-toggle="collapse" data-bs-target="#season{{ s.season.season_id }}">
+        Season {{ s.season.season_number }} ({{ s.episodes | selectattr('watched') | list | length }}/{{ s.episodes | length }} watched)
+    </button>
+    <form action="/season/mark-watched/{{ s.season.season_id }}" method="post"
+          class="d-flex align-items-center px-2 bg-dark">
+        <input type="hidden" name="action" value="watch">
+        <button type="submit" class="btn btn-sm btn-outline-success"
+            onclick="event.stopPropagation();" title="Mark entire season watched">
+            ✓ All
+        </button>
+    </form>
+</h2>
         <div id="season{{ s.season.season_id }}" class="accordion-collapse collapse"
              data-bs-parent="#seasonAccordion">
             <div class="accordion-body">

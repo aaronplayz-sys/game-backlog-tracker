@@ -179,6 +179,19 @@ class MediaTracker:
         self.conn.commit()
         return True
     
+    def mark_season_watched(self, season_id, watched=True):
+        """UPDATE — Mark all episodes in a season as watched (or unwatched)."""
+        new_status = 1 if watched else 0
+        watched_date_sql = "DATE('now')" if watched else "NULL"
+        self.conn.execute(f"""
+            UPDATE episodes
+            SET watched = ?, watched_date = {watched_date_sql}
+            WHERE season_id = ?
+        """, (new_status, season_id))
+        self.conn.commit()
+        print(f"Season ID {season_id} marked as {'watched' if watched else 'unwatched'}.")
+        return True
+    
     def get_next_unwatched_episode(self, media_id):
         """Find the next unwatched episode in order across all seasons."""
         cursor = self.conn.cursor()
