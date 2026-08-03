@@ -9,10 +9,18 @@
 </div>
 
 <!-- Filter buttons -->
-<div class="mb-4">
-    <a href="/media" class="btn btn-sm {{ 'btn-primary' if not active_filter else 'btn-outline-secondary' }}">All</a>
-    <a href="/media?type=movie" class="btn btn-sm {{ 'btn-primary' if active_filter == 'movie' else 'btn-outline-secondary' }}">Movies</a>
-    <a href="/media?type=tv" class="btn btn-sm {{ 'btn-primary' if active_filter == 'tv' else 'btn-outline-secondary' }}">TV Shows</a>
+<div class="mb-4 d-flex flex-wrap gap-2">
+    <div class="btn-group">
+        <a href="/media" class="btn btn-sm {{ 'btn-primary' if not active_filter else 'btn-outline-secondary' }}">All</a>
+        <a href="/media?type=movie" class="btn btn-sm {{ 'btn-primary' if active_filter == 'movie' else 'btn-outline-secondary' }}">Movies</a>
+        <a href="/media?type=tv" class="btn btn-sm {{ 'btn-primary' if active_filter == 'tv' else 'btn-outline-secondary' }}">TV Shows</a>
+    </div>
+    <div class="btn-group">
+        <a href="/media?status=Backlog{{ '&type=' ~ active_filter if active_filter }}"
+           class="btn btn-sm {{ 'btn-info' if active_status == 'Backlog' else 'btn-outline-secondary' }}">📋 Backlog</a>
+        <a href="/media?status=Watching{{ '&type=' ~ active_filter if active_filter }}"
+           class="btn btn-sm {{ 'btn-info' if active_status == 'Watching' else 'btn-outline-secondary' }}">▶ Watching</a>
+    </div>
 </div>
 
 <!-- Poster Grid -->

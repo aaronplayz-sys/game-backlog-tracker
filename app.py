@@ -140,19 +140,22 @@ def backlog_delete(eid):
 
 @app.route("/media")
 def media():
-    media_type = request.args.get("type")  # optional filter: movie / tv
+    media_type = request.args.get("type")      # optional filter: movie / tv
+    status_filter = request.args.get("status")  # optional filter: Backlog / Watching / Completed / Dropped
     items = media_tracker.get_all_media(media_type)
 
-    # Attach progress info for TV shows
+    # Attach progress info for TV shows, apply status filter if present
     items_with_progress = []
     for item in items:
         item_dict = dict(item)
+        if status_filter and item_dict["status"] != status_filter:
+            continue
         if item_dict["media_type"] == "tv":
             item_dict["progress"] = media_tracker.get_progress(item_dict["media_id"])
         items_with_progress.append(item_dict)
 
     return render_template("media.html", items=items_with_progress,
-                           active_filter=media_type)
+                           active_filter=media_type, active_status=status_filter)
 
 
 @app.route("/api/tmdb-search")
