@@ -56,8 +56,16 @@
             <button class="btn btn-sm btn-outline-danger"
                 onclick="return confirm('Remove this from your tracker?')">Delete</button>
         </form>
+
+        {% if item.media_type == 'tv' %}
+        <form action="/media/refresh/{{ item.media_id}}" method="post">
+            <button class="btn btn-sm btn-outline-info">
+                🔄 Check for New Episodes
+            </button>
+        </form>
     </div>
 </div>
+
 
 {% if seasons %}
 <h4 class="mt-4">Seasons</h4>

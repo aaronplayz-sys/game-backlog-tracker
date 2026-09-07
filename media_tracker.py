@@ -213,3 +213,74 @@ class MediaTracker:
                 "title": row["episode_title"]
             }
         return None  # fully watched
+
+    def refresh_show_episodes(self, media_id):
+        """
+        Re-sync a TV show against TMDB — adds any new seasons/episodes
+        that don't exist locally yet. Never touches existing watched status.
+        Returns a summary dict of what was added.
+        """
+        row = self.get_media_by_id(media_id)
+        if not row or row["media_type"] != "tv":
+            print("Not a TV show, nothing to refresh.")
+            return None
+
+        tmdb_id = row["tmdb_id"]
+        tmdb_seasons = self.tmdb.get_tv_details(tmdb_id)
+
+        # Build a lookup of what we already have locally
+        existing_seasons = self.get_seasons_for_media(media_id)
+        existing_by_number = {s["season_number"]: s for s in existing_seasons}
+
+        cursor = self.conn.cursor()
+        new_seasons_added = 0
+        new_episodes_added = 0
+
+        for tmdb_season in tmdb_seasons:
+            season_number = tmdb_season["season_number"]
+
+            if season_number in existing_by_number:
+                # Season exists — check for new episodes within it
+                season_id = existing_by_number[season_number]["season_id"]
+                existing_episodes = self.get_episodes_for_season(season_id)
+                existing_ep_numbers = {e["episode_number"] for e in existing_episodes}
+
+                tmdb_episodes = self.tmdb.get_season_episodes(tmdb_id, season_number)
+                for ep in tmdb_episodes:
+                    if ep["episode_number"] not in existing_ep_numbers:
+                        cursor.execute("""
+                            INSERT INTO episodes (season_id, episode_number, title, air_date)
+                            VALUES (?, ?, ?, ?)
+                        """, (season_id, ep["episode_number"], ep["title"], ep["air_date"]))
+                        new_episodes_added += 1
+
+                # Keep episode_count in sync too
+                cursor.execute("""
+                    UPDATE seasons SET episode_count = ? WHERE season_id = ?
+                """, (tmdb_season["episode_count"], season_id))
+
+            else:
+                # Entirely new season — create it and all its episodes
+                cursor.execute("""
+                    INSERT INTO seasons (media_id, season_number, episode_count, overview)
+                    VALUES (?, ?, ?, ?)
+                """, (media_id, season_number, tmdb_season["episode_count"],
+                      tmdb_season["overview"]))
+                season_id = cursor.lastrowid
+                new_seasons_added += 1
+
+                tmdb_episodes = self.tmdb.get_season_episodes(tmdb_id, season_number)
+                for ep in tmdb_episodes:
+                    cursor.execute("""
+                        INSERT INTO episodes (season_id, episode_number, title, air_date)
+                        VALUES (?, ?, ?, ?)
+                    """, (season_id, ep["episode_number"], ep["title"], ep["air_date"]))
+                    new_episodes_added += 1
+
+        self.conn.commit()
+        print(f"Refresh complete: {new_seasons_added} new season(s), "
+              f"{new_episodes_added} new episode(s) added.")
+        return {
+            "new_seasons": new_seasons_added,
+            "new_episodes": new_episodes_added
+        }

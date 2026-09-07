@@ -233,6 +233,22 @@ def episode_toggle(episode_id):
     # Redirect back to the referring show page
     return redirect(request.referrer or url_for("media"))
 
+@app.route("/media/refresh/<int:media_id>", methods=["POST"])
+def media_refresh(media_id):
+    result = media_tracker.refresh_show_episodes(media_id)
+    if result is None:
+        flash("Could not refresh — not a TV show.", "danger")
+    elif result["new_seasons"] == 0 and result["new_episodes"] == 0:
+        flash("Already up to date — no new episodes found.", "success")
+    else:
+        parts = []
+        if result["new_seasons"]:
+            parts.append(f"{result['new_seasons']} new season(s)")
+        if result["new_episodes"]:
+            parts.append(f"{result['new_episodes']} new episode(s)")
+        flash(f"Updated! Added {' and '.join(parts)}.", "success")
+    return redirect(url_for("media_detail", media_id=media_id))
+
 
 # =========================================================
 # LIGHTWEIGHT JSON API (for userscript)
