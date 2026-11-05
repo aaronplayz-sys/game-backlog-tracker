@@ -1,65 +1,120 @@
-# game-backlog-tracker
-Originally a project for a generative AI assignment for one of my courses at Valencia College. I decied to add more to it after subitting the assignment.
+# Game Backlog Tracker
 
-## What was the assignment about?
+A database-backed game and media tracker that began as a Valencia College course project. The application includes a console interface, a Flask web interface, SQLite persistence, and TMDB integration.
 
-The assignment was to build a database-backed application using object-oriented software and use any gnerative AI like ChatGPT and Gemini as a partner to build this application.
+## Requirements
 
-## What AI did I use?
+- Docker Engine and the Docker Compose plugin for containerized use
+- Python 3.12+ for native execution
+- A TMDB API key for movie and TV search features
 
-While I was already familar using ChatGPT and Gemini, I decided to use Claude. I know... There's so much news how great Claude is, but I have yet to personally use Claude for anything. So I decided to use Claude Sonnet 4.6 model. Mainly because I wanted to see how great the free teir models are as most of us already know how great the paid tiers are.
+## Run with Docker
 
-## The result? 
+Clone the repository and enter its directory:
 
-In the end I have a colsole-based application using CRUD operations to interact with a database that dose not need a server to be run separately. Of course, there was naturally a issue that was resolved rather quickly.
+```bash
+git clone https://github.com/aaronplayz-sys/game-backlog-tracker.git
+cd game-backlog-tracker
+```
 
-## What am I adding?
+Create your local environment file:
 
-I wanted to do more outside of the assignment as I thought it was beyond the scope and not needed a website interface. I might add more overtime as long my interest see ot that way. And also to make this reproducable on other systems than just my own I made a docker image. But note this application can be run without a docker container.
+```bash
+cp .env.example .env
+```
 
-## Required 
-- Docker (**If** using containers)
-- Python 3 (**If** running app without containers)
-- Basic python knowlege.
-- Basic HTML knowlege.
-- Basic CSS knowlege.
+On Windows PowerShell, use `Copy-Item .env.example .env`.
 
-## Installation
-Installing and running this application is very simular but can differ slighty depending if you choose to run with python installed on your system or using docker. My recommendation is that you use docker unless you plan to make further modifications.
+Edit `.env` and set:
+- `TMDB_API_KEY`: your TMDB API key
+- `FLASK_SECRET_KEY`: a long, random secret used to sign Flask sessions
+- `USERSCRIPT_API_SECRET`: a separate random secret for the userscript API
+- `APP_PORT`: optional host port; defaults to `5000`
 
-### Docker
+Generate random secrets with:
 
-Asuming you have docker and docker compose installed.
+```bash
+python -c "import secrets; print(secrets.token_urlsafe(48))"
+```
 
-Clone this repo: `git clone https://github.com/aaronplayz-sys/game-backlog-tracker.git`
+Do not commit your real `.env` file.
 
-Enter the directory and then run `docker compose up -d`.
+Build and start the web application:
 
-This will take a moment as the image will be built locally as I do not host pre-built images.
+```bash
+docker compose up -d --build
+```
 
-This application will be running on port **5000**.
+Open http://localhost:5000. If you changed `APP_PORT`, use that port instead.
 
-Optional: 
+Useful commands:
 
-Import sample data, by doing `docker compose exec backlog-tracker python load_sample_data.py`
+```bash
+docker compose ps
+docker compose logs -f backlog-tracker
+docker compose exec backlog-tracker python load_sample_data.py
+```
 
-#### Making modifications
+Sample data is optional and is not loaded automatically.
 
-If wish to make modifications with docker, you need to rebuild the image each time you make a change, this is why I recommend that you have python installed on your system to see changes instantly without needed to build an image.
+### Existing database volumes
 
-### Native python
+The container now runs as the unprivileged UID/GID `10001`. A database volume created by an older root-running image may need its ownership changed to UID/GID `10001` before the updated container can write to it. Back up your database before performing any ownership migration. Do not remove the named volume when upgrading; it contains your persistent data.
 
-This is the best method to run the console-based application (no webpage) and the web version. This is also the easist way to make changes and see them instantly.
+### Run the console application in Docker
 
-Clone this repo: `git clone https://github.com/aaronplayz-sys/game-backlog-tracker.git`
+The default container command starts the Flask web interface. To run the original console application instead:
 
-Enter the directory and then run `python app.py` if you want the webpage interface. If you want to run the console-based app then run `python main.py`.
+```bash
+docker compose run --rm backlog-tracker python main.py
+```
 
-## Checklist
-- [x] Import project files
-- [x] Create pages
-- [x] Add Flask routes
-- [x] Create Dockerfile
-- [x] Create docker-compose.yml
-- [x] Write installation instructions
-- [ ] Documentation
+## Run natively with Python
+
+Create and activate a virtual environment, then install dependencies:
+
+```bash
+python -m venv .venv
+```
+
+Linux/macOS:
+
+```bash
+source .venv/bin/activate
+```
+
+Windows PowerShell:
+
+```powershell
+.venv\\Scripts\\Activate.ps1
+```
+
+Install dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+Create a local `.env` file with `TMDB_API_KEY` and `FLASK_SECRET_KEY` configured. Start the console application with `python main.py`, or start the Flask development server with `python app.py`.
+
+The Flask development server is for local development. The Docker deployment uses Gunicorn.
+
+## Container design notes
+
+- The image uses a non-root application user (UID/GID `10001`).
+- SQLite data is stored in the persistent `backlog_data` named volume.
+- Flask session signing uses the required `FLASK_SECRET_KEY` environment variable.
+- The userscript API fails closed when `USERSCRIPT_API_SECRET` is unset.
+- Gunicorn is configured with one worker and one thread because the current application creates and shares a SQLite connection at module import. Increase concurrency only after refactoring database connection lifecycle and testing concurrent access.
+- The container health check requests the Flask home page.
+
+For application changes, rebuild with `docker compose up -d --build`.
+
+## Project checklist
+
+- [x] Console application
+- [x] Flask web interface
+- [x] SQLite persistence
+- [x] Dockerfile and Compose configuration
+- [x] Containerized deployment instructions
+- [ ] Expand application documentation
