@@ -1,13 +1,23 @@
 # app.py
 # Flask web application for the Game Backlog Tracker
 
+import hmac
+import os
+
+from dotenv import load_dotenv
 from flask import Flask, render_template, request, redirect, url_for, flash
+
+# Load local development configuration before reading application secrets.
+load_dotenv()
+
 from database import DatabaseManager
 from tracker import BacklogTracker
 from media_tracker import MediaTracker
 
 app = Flask(__name__)
-app.secret_key = "backlog_tracker_secret"
+app.secret_key = os.environ.get("FLASK_SECRET_KEY")
+if not app.secret_key:
+    raise RuntimeError("FLASK_SECRET_KEY must be set before starting the web application.")
 
 # --- DB setup ---
 db = DatabaseManager()
@@ -254,12 +264,13 @@ def media_refresh(media_id):
 # LIGHTWEIGHT JSON API (for userscript)
 # =========================================================
 
-import os
-API_SECRET = os.environ.get("USERSCRIPT_API_SECRET", "change-me-please")
+API_SECRET = os.environ.get("USERSCRIPT_API_SECRET")
+
 
 def check_api_secret():
-    """Simple shared-secret check so random pages can't hit this API."""
-    return request.headers.get("X-API-Secret") == API_SECRET
+    """Fail closed when no userscript API secret has been configured."""
+    supplied_secret = request.headers.get("X-API-Secret", "")
+    return bool(API_SECRET) and hmac.compare_digest(supplied_secret, API_SECRET)
 
 
 @app.route("/api/tv-shows")
