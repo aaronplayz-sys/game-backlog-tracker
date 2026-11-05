@@ -1,18 +1,29 @@
 services:
   backlog-tracker:
-    build: .
+    build:
+      context: .
     container_name: game_backlog_tracker
     ports:
-      - "5000:5000"
+      - "${APP_PORT:-5000}:5000"
+    environment:
+      DB_PATH: /app/data/backlog.db
+      FLASK_SECRET_KEY: ${FLASK_SECRET_KEY:?Set FLASK_SECRET_KEY in your .env file}
+      TMDB_API_KEY: ${TMDB_API_KEY:?Set TMDB_API_KEY in your .env file}
+      USERSCRIPT_API_SECRET: ${USERSCRIPT_API_SECRET:-}
     volumes:
       - backlog_data:/app/data
-    environment:
-      - DB_PATH=/app/data/backlog.db
-      - TMDB_API_KEY=${TMDB_API_KEY}
-      - USERSCRIPT_API_SECRET=${USERSCRIPT_API_SECRET}
-    env_file:
-      - .env
+    init: true
     restart: unless-stopped
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5000/', timeout=3)"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
 volumes:
   backlog_data:
